@@ -7,18 +7,27 @@ const DEV_MONGO_URL = 'mongodb://localhost:27017'
 
 const mongoUrl = process.env.MONGO_URL || DEV_MONGO_URL
 
-console.log('Connecting to: ', mongoUrl)
+console.log('Connecting to MongoDB instance at: ', mongoUrl)
 
 let activities
 
 MongoClient.connect(mongoUrl, (err, client) => {
-  console.log(err, client)
-  activities = client.db('challenge').collection('activites')
+  if (err) {
+    console.error(err)
+    return
+  }
+
+  console.log('Successfully connected to MongoDB')
+  activities = client.db('challenge').collection('activities')
 })
 
 server.use(bodyParser.json())
 
-server.get('/', (req, res) => res.send('Hello hi!'))
+server.get('/', async (req, res) => {
+  const docs = await activities.find({}).toArray()
+  const allActivities = docs.map(doc => doc.activity).join('—')
+  res.send(allActivities)
+})
 
 server.post('/slack', (req, res) => {
   const message = req.body.event.text
